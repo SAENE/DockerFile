@@ -1,0 +1,35 @@
+## Version 2023/04/13 - Changelog: https://github.com/linuxserver/docker-baseimage-alpine-nginx/commits/master/root/defaults/nginx/site-confs/default.conf.sample
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    listen 443 ssl http2 default_server;
+    listen [::]:443 ssl http2 default_server;
+
+    server_name _;
+
+    include /config/nginx/ssl.conf;
+    # 让 nginx 自动生成索引页面，避免 403 错误
+    autoindex on;
+
+    root /webdav/;
+    index index.html index.htm index.php;
+
+    location / {
+           auth_basic "Restricted";
+           auth_basic_user_file /config/access/.htpasswd;
+           # 启用 WebDav 的一些关键字        
+           dav_methods PUT DELETE MKCOL COPY MOVE;
+           # 启用 WebDav 的一些扩展关键字用于支持应用访问
+           dav_ext_methods PROPFIND OPTIONS;
+           # 设置 WebDav 目录下新增文件的默认权限
+           dav_access user:rw group:rw all:r;
+           # 创建文件夹时自动创建路径上不存在的文件夹
+           create_full_put_path  on;
+    }
+    # deny access to .htaccess/.htpasswd files
+    location ~ /\.ht {
+        deny all;
+    }
+}
