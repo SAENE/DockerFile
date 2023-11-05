@@ -69,9 +69,11 @@ http {
         '' close;
     }
     # 禁止重定向
-	
     port_in_redirect off;
 	absolute_redirect off;
+
+    # 设置字符集为utf8
+    charset utf-8;
 
     # Sets the path, format, and configuration for a buffered log write.
     access_log /config/log/nginx/access.log;
