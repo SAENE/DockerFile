@@ -12,5 +12,5 @@ if pgrep -f "[n]ginx:" >/dev/null; then
     pkill -9 -ef [n]ginx:
     sleep 1
 fi
-
+chown -R abc:abc /config
 exec /usr/sbin/nginx
