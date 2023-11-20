@@ -1,0 +1,54 @@
+# PHP8.2
+FROM php:7.4-fpm
+# 设置LABEL
+ARG BUILD_DATE
+ARG VERSION
+LABEL maintainer="MAENE"
+ENV TZ=Asia/Shanghai
+ENV PUID=1000
+ENV GUID=1000
+
+# 安装插件
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list &&\
+    apt update && apt install -y imagemagick libzip-dev libpng-dev zlib1g-dev libc-client-dev libkrb5-dev libmagickwand-dev libmagickcore-dev logrotate vim nano cron &&\
+    docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install imap &&\
+    docker-php-ext-install pdo_mysql mysqli gd exif zip  sockets bcmath && \
+    pecl install imagick &&\
+    echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/docker-php-ext-imagick.ini &&\
+    echo "**** create abc user and make our folders ****" && \
+    useradd -u 911 -U -d /config -s /bin/false abc && \
+    usermod -G users abc && \
+    echo "**** configure php ****" && \
+    sed -i "s#;error_log = log/php-fpm.log.*#error_log = /config/log/php/error.log#g" \
+        /usr/local/etc/php-fpm.conf && \
+    sed -i "s#user = www-data.*#user = abc#g" \
+        /usr/local/etc/php-fpm.d/www.conf &&\
+    sed -i "s#group = www-data.*#group = abc#g" \
+        /usr/local/etc/php-fpm.d/www.conf &&\
+    echo "**** install php composer ****" && \
+    EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')" && \
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+    ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")" && \
+    if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then \
+        >&2 echo 'ERROR: Invalid installer checksum' && \
+        rm composer-setup.php && \
+        exit 1; \
+    fi && \
+    php composer-setup.php --install-dir=/usr/bin && \
+    rm composer-setup.php &&\
+    echo "**** clean up ****" && \
+    apt-get clean && \
+    rm -rf \
+        /config/* \
+        /tmp/* \
+        /var/lib/apt/lists/* \
+        /var/tmp/*
+
+COPY root/ /
+
+# ports and volumes
+EXPOSE 9000
+
+VOLUME /config
+
+ENTRYPOINT [ "bash","/docker-start.sh" ]
