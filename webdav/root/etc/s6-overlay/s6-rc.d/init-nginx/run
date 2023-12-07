@@ -64,7 +64,7 @@ fi
 mkdir /config/access
 touch /config/access/.htpasswd
 if [ -n "${WEBDAV_USERNAME:-}" ] && [ -n "${WEBDAV_PASSWORD:-}" ]; then
-    htpasswd -cb /config/access/.htpasswd $WEBDAV_USERNAME $WEBDAV_PASSWORD
+    htpasswd -B -cb /config/access/.htpasswd $WEBDAV_USERNAME $WEBDAV_PASSWORD
 else
     echo "No htpasswd config done"
     sed -i 's%auth_basic "Restricted";% %g' /config/nginx/site-confs/default.conf

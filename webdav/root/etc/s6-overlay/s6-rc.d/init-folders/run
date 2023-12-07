@@ -3,8 +3,8 @@
 
 # make folders
 mkdir -p \
-    /config/{keys,php,www} \
-    /config/log/{nginx,php} \
+    /config/{keys,www} \
+    /config/log/nginx \
     /config/nginx/site-confs \
     /run \
     /var/lib/nginx/tmp/client_body \
