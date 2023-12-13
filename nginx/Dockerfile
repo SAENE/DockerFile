@@ -132,6 +132,7 @@ RUN \
     brotli-dev \
     zeromq-dev \
     hiredis-dev \
+    pcre \
     luajit-dev \
     zlib-dev \
     libxml2-dev \
@@ -237,6 +238,26 @@ RUN \
     musl-dev \
     libxslt-dev && \
     rm -r /buildfile && \
+  apk add --no-cache \
+    nginx-mod-http-brotli \
+    nginx-mod-http-dav-ext \
+    nginx-mod-http-echo \
+    nginx-mod-http-fancyindex \
+    nginx-mod-http-geoip \
+    nginx-mod-http-geoip2 \
+    nginx-mod-http-headers-more \
+    nginx-mod-http-image-filter \
+    nginx-mod-http-perl \
+    nginx-mod-http-redis2 \
+    nginx-mod-http-set-misc \
+    nginx-mod-http-upload-progress \
+    nginx-mod-http-xslt-filter \
+    nginx-mod-mail \
+    nginx-mod-rtmp \
+    nginx-mod-stream \
+    nginx-mod-stream-geoip \
+    nginx-mod-stream-geoip2 \
+    nginx-vim && \
   echo "**** configure nginx ****" && \
   echo 'fastcgi_param  HTTP_PROXY         ""; # https://httpoxy.org/' >> \
     /etc/nginx/fastcgi_params && \
