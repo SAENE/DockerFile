@@ -29,3 +29,8 @@ src/os/unix/ngx_alloc.h:19:27: note: call to 'free' here
 cc1: all warnings being treated as errors
 make[1]: *** [objs/Makefile:5317: objs/addon/nginx-upload-progress-module/ngx_http_uploadprogress_module.o] Error 1
 ```
+
+如需编译，请使用
+```Linux
+DOCKER_BUILDKIT=1 docker build . --network=host
+```
