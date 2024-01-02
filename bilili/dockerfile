@@ -1,0 +1,43 @@
+FROM python:3.11.7-alpine3.19 as rootfs-stage
+
+RUN \
+  echo "**** install runtime packages ****" && \
+  sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
+  apk add --no-cache \
+    alpine-release \
+    bash \
+    ca-certificates \
+    coreutils \
+    curl \
+    jq \
+    netcat-openbsd \
+    procps-ng \
+    shadow \
+    tzdata && \
+  echo "**** create abc user and make our folders ****" && \
+  groupmod -g 1000 users && \
+  useradd -u 1000 -U -d /config -s /bin/bash abc && \
+  usermod -G users abc && \
+  mkdir -p \
+    /app \
+    /config \
+    /defaults \
+    /lsiopy && \
+  echo "**** cleanup ****" && \
+  rm -rf \
+    /tmp/*
+
+RUN \
+    echo "*** Install RUN Package" && \
+    apk add --no-cache \
+    git \
+    ffmpeg && \
+    git clone https://github.com/yutto-dev/yutto.git /yutto && \
+    cd yutto && \
+    pip install . -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+    echo "alias ytt=\"yutto -d /config/ -n 8 --vcodec='hevc:copy' -q 127 -aq 30251 --output-format=mkv --no-danmaku --no-subtitle --vip-strict --login-strict \" " >> /root/.bashrc
+
+COPY entrypoint.sh /
+WORKDIR /config
+ENTRYPOINT ["/entrypoint.sh"]
+VOLUME /config
