@@ -269,7 +269,6 @@ RUN \
     /etc/nginx/fastcgi_params && \
   rm -f /etc/nginx/conf.d/stream.conf && \
   rm -f /etc/nginx/http.d/default.conf && \
-  echo "**** guarantee correct php version is symlinked ****" && \
   echo "**** fix logrotate ****" && \
   sed -i "s#/var/log/messages {}.*# #g" \
     /etc/logrotate.conf && \

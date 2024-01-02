@@ -1,0 +1,24 @@
+FROM debian:bullseye-slim
+LABEL org.opencontainers.image.authors="MAENE"
+ENV LANG C.UTF-8
+ENV TZ=Asia/Shanghai
+LABEL build_version="MAENE version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+LABEL maintainer="MAENE"
+
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends openssh-server rsync && \
+    apt-get clean && \
+    mkdir /var/run/sshd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd && \
+    echo "export VISIBLE=now" >> /etc/profile && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+COPY entrypoint.sh /entrypoint.sh
+
+EXPOSE 22
+EXPOSE 873
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["rsync_server"]
