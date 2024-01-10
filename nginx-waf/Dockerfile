@@ -135,7 +135,11 @@ RUN \
     pcre \
     luajit-dev \
     zlib-dev \
+    flex \
+    bison \
     libxml2-dev \
+    libsodium \
+    libsodium-dev \
     geoip-dev \
     perl-dev \
     pcre-dev \
@@ -149,6 +153,9 @@ RUN \
   echo "**** download nginx ****" && \
   wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz -O /buildfile/nginx-${NGINX_VERSION}.tar.gz && \
   tar -zxvf /buildfile/nginx-${NGINX_VERSION}.tar.gz -C /buildfile/ && \
+  git clone https://github.com/troydhanson/uthash /buildfile/model/uthash && \
+  git clone -b lts https://github.com/ADD-SP/ngx_waf /buildfile/model/ngx_waf && \
+  git clone -b v3.9.2 https://github.com/libinjection/libinjection /buildfile/model/ngx_waf/inc/libinjection && \
   git clone -b v0.3.2 https://github.com/vision5/ngx_devel_kit /buildfile/model/ngx_devel_kit && \
   git clone -b v2.0 https://github.com/Lax/traffic-accounting-nginx-module /buildfile/model/traffic-accounting-nginx-module && \
   git clone -b v0.06 https://github.com/openresty/array-var-nginx-module /buildfile/model/array-var-nginx-module && \
@@ -209,9 +216,13 @@ RUN \
   git apply --reject --ignore-space-change --ignore-whitespace /buildfile/patch/nginx-module-vts~fixes.patch && \
   export LUAJIT_LIB="$(pkgconf --variable=libdir luajit)" && \
 	export LUAJIT_INC="$(pkgconf --variable=includedir luajit)" && \
+  export LIB_UTHASH=/buildfile/model/uthash  && \
   export NGX_HTTP_KEYVAL_ZONE_REDIS=1 && \
   echo "**** start build nginx ****" && \
-  cd /buildfile/nginx-${NGINX_VERSION} && /buildfile/nginx-${NGINX_VERSION}/configure --prefix=/var/lib/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules --conf-path=/etc/nginx/nginx.conf --pid-path=/run/nginx/nginx.pid --lock-path=/run/nginx/nginx.lock --http-client-body-temp-path=/var/lib/nginx/tmp/client_body --http-proxy-temp-path=/var/lib/nginx/tmp/proxy --http-fastcgi-temp-path=/var/lib/nginx/tmp/fastcgi --http-uwsgi-temp-path=/var/lib/nginx/tmp/uwsgi --http-scgi-temp-path=/var/lib/nginx/tmp/scgi --with-perl_modules_path=/usr/lib/perl5/vendor_perl --user=nginx --group=nginx --with-threads --with-file-aio --without-pcre2 --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module=dynamic --with-http_image_filter_module=dynamic --with-http_geoip_module=dynamic --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_slice_module --with-http_stub_status_module --with-http_perl_module=dynamic --with-mail=dynamic --with-mail_ssl_module --with-stream=dynamic --with-stream_ssl_module --with-stream_realip_module --with-stream_geoip_module=dynamic --with-stream_ssl_preread_module --add-dynamic-module=/buildfile/model/ngx_http_substitutions_filter_module --add-dynamic-module=/buildfile/model/ngx_devel_kit  --add-dynamic-module=/buildfile/model/traffic-accounting-nginx-module  --add-dynamic-module=/buildfile/model/array-var-nginx-module  --add-dynamic-module=/buildfile/model/nginx-auth-jwt  --add-dynamic-module=/buildfile/model/ngx_brotli  --add-dynamic-module=/buildfile/model/ngx_cache_purge  --add-dynamic-module=/buildfile/model/nginx_cookie_flag_module  --add-dynamic-module=/buildfile/model/nginx-dav-ext-module  --add-dynamic-module=/buildfile/model/echo-nginx-module  --add-dynamic-module=/buildfile/model/encrypted-session-nginx-module  --add-dynamic-module=/buildfile/model/ngx-fancyindex  --add-dynamic-module=/buildfile/model/ngx_http_geoip2_module  --add-dynamic-module=/buildfile/model/headers-more-nginx-module  --add-dynamic-module=/buildfile/model/nginx-keyval  --add-dynamic-module=/buildfile/model/nginx-log-zmq  --add-dynamic-module=/buildfile/model/lua-nginx-module  --add-dynamic-module=/buildfile/model/lua-upstream-nginx-module  --add-dynamic-module=/buildfile/model/nchan  --add-dynamic-module=/buildfile/model/redis2-nginx-module  --add-dynamic-module=/buildfile/model/set-misc-nginx-module  --add-dynamic-module=/buildfile/model/nginx-http-shibboleth  --add-dynamic-module=/buildfile/model/ngx_http_untar_module  --add-dynamic-module=/buildfile/model/nginx-upload-module   --add-dynamic-module=/buildfile/model/nginx-upstream-fair  --add-dynamic-module=/buildfile/model/ngx_upstream_jdomain  --add-dynamic-module=/buildfile/model/nginx-vod-module  --add-dynamic-module=/buildfile/model/nginx-module-vts  --add-dynamic-module=/buildfile/model/mod_zip  --add-dynamic-module=/buildfile/model/nginx-rtmp-module --add-dynamic-module=/buildfile/model/naxsi/naxsi_src --add-dynamic-module=/buildfile/model/nginx-upload-progress-module && \
+  cd /buildfile/model/ngx_waf && make -j$(nproc) && \
+  cd /buildfile/nginx-${NGINX_VERSION} && \
+  /buildfile/nginx-${NGINX_VERSION}/configure --prefix=/var/lib/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules --conf-path=/etc/nginx/nginx.conf --pid-path=/run/nginx/nginx.pid --lock-path=/run/nginx/nginx.lock --http-client-body-temp-path=/var/lib/nginx/tmp/client_body --http-proxy-temp-path=/var/lib/nginx/tmp/proxy --http-fastcgi-temp-path=/var/lib/nginx/tmp/fastcgi --http-uwsgi-temp-path=/var/lib/nginx/tmp/uwsgi --http-scgi-temp-path=/var/lib/nginx/tmp/scgi --with-perl_modules_path=/usr/lib/perl5/vendor_perl --user=nginx --group=nginx --with-threads --with-file-aio --without-pcre2 --with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module=dynamic --with-http_image_filter_module=dynamic --with-http_geoip_module=dynamic --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_slice_module --with-http_stub_status_module --with-http_perl_module=dynamic --with-mail=dynamic --with-mail_ssl_module --with-stream=dynamic --with-stream_ssl_module --with-stream_realip_module --with-stream_geoip_module=dynamic --with-stream_ssl_preread_module --add-dynamic-module=/buildfile/model/ngx_http_substitutions_filter_module --add-dynamic-module=/buildfile/model/ngx_devel_kit  --add-dynamic-module=/buildfile/model/traffic-accounting-nginx-module  --add-dynamic-module=/buildfile/model/array-var-nginx-module  --add-dynamic-module=/buildfile/model/nginx-auth-jwt  --add-dynamic-module=/buildfile/model/ngx_brotli  --add-dynamic-module=/buildfile/model/ngx_cache_purge  --add-dynamic-module=/buildfile/model/nginx_cookie_flag_module  --add-dynamic-module=/buildfile/model/nginx-dav-ext-module  --add-dynamic-module=/buildfile/model/echo-nginx-module  --add-dynamic-module=/buildfile/model/encrypted-session-nginx-module  --add-dynamic-module=/buildfile/model/ngx-fancyindex  --add-dynamic-module=/buildfile/model/ngx_http_geoip2_module  --add-dynamic-module=/buildfile/model/headers-more-nginx-module  --add-dynamic-module=/buildfile/model/nginx-keyval  --add-dynamic-module=/buildfile/model/nginx-log-zmq  --add-dynamic-module=/buildfile/model/lua-nginx-module  --add-dynamic-module=/buildfile/model/lua-upstream-nginx-module  --add-dynamic-module=/buildfile/model/nchan  --add-dynamic-module=/buildfile/model/redis2-nginx-module  --add-dynamic-module=/buildfile/model/set-misc-nginx-module  --add-dynamic-module=/buildfile/model/nginx-http-shibboleth  --add-dynamic-module=/buildfile/model/ngx_http_untar_module  --add-dynamic-module=/buildfile/model/nginx-upload-module   --add-dynamic-module=/buildfile/model/nginx-upstream-fair  --add-dynamic-module=/buildfile/model/ngx_upstream_jdomain  --add-dynamic-module=/buildfile/model/nginx-vod-module  --add-dynamic-module=/buildfile/model/nginx-module-vts  --add-dynamic-module=/buildfile/model/mod_zip  --add-dynamic-module=/buildfile/model/nginx-rtmp-module --add-dynamic-module=/buildfile/model/naxsi/naxsi_src --add-dynamic-module=/buildfile/model/nginx-upload-progress-module  --add-dynamic-module=/buildfile/model/ngx_waf && \
+  sed -i 's/^\(CFLAGS.*\)/\1 -fstack-protector-strong -Wno-sign-compare/' /buildfile/nginx-${NGINX_VERSION}/objs/Makefile && \
   sed -i '3s/-Werror//g' /buildfile/nginx-${NGINX_VERSION}/objs/Makefile && \
   make -j$(nproc) && \
   make install && \
@@ -236,6 +247,7 @@ RUN \
     pcre2-dev \
     openssl-dev \
     jansson-dev \
+    libsodium-dev \
     musl-dev \
     libxslt-dev && \
     rm -r /buildfile && \
