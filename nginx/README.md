@@ -1,4 +1,4 @@
-基于Linuxserver/nginx、Linuxserver/docker-baseimage-alpine-nginx 、docker-baseimage-alpine编写，编译Ngin，去除了PHP
+基于Linuxserver/docker-baseimage-alpine-nginx编写，编译Ngin，去除了PHP
 
 nginx编译参数（参考[alpine](https://git.alpinelinux.org/aports/tree/main/nginx?h=3.18-stable)官方编译）：
 
