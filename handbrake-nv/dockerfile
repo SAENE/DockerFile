@@ -1,0 +1,9 @@
+FROM zocker160/handbrake-nvenc:latest
+RUN sed -i "s/http:\/\/archive.ubuntu.com/https:\/\/mirrors.ustc.edu.cn/g" /etc/apt/sources.list && sed -i "s/http:\/\/security.ubuntu.com/https:\/\/mirrors.ustc.edu.cn/g" /etc/apt/sources.list && rm /var/lib/dpkg/statoverride && rm /var/lib/dpkg/lock && dpkg --configure -a && apt update  &&\
+    apt-get install -y fonts-noto-cjk fonts-wqy-zenhei && echo "**** clean up ****" && \
+  apt-get clean && \
+  rm -rf \
+    /config/* \
+    /tmp/* \
+    /var/lib/apt/lists/* \
+    /var/tmp/* 

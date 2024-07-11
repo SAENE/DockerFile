@@ -1,6 +1,6 @@
 FROM linuxserver/code-server:latest
 RUN sed -i "s/http:\/\/archive.ubuntu.com/https:\/\/mirrors.ustc.edu.cn/g" /etc/apt/sources.list && apt update && sudo apt upgrade -y &&\
-    apt-get install -y iproute2 dnsutils wget zsh build-essential manpages-dev golang pip cargo rsync nodejs npm cron fonts-wqy-zenhei language-pack-zh-hans inetutils-ping knot-dnsutils && echo "deb https://deb.volian.org/volian/ scar main" | tee /etc/apt/sources.list.d/volian-archive-scar-unstable.list && wget -qO - https://deb.volian.org/volian/scar.key | tee /etc/apt/trusted.gpg.d/volian-archive-scar-unstable.gpg > /dev/null && apt update && apt install nala -y && echo "**** clean up ****" && \
+    apt-get install -y iproute2 dnsutils wget zsh build-essential manpages-dev golang pip cargo rsync nodejs npm cron fonts-wqy-zenhei language-pack-zh-hans inetutils-ping knot-dnsutils gdb && curl https://gitlab.com/volian/volian-archive/-/raw/main/install-nala.sh | bash && echo "**** clean up ****" && \
   apt-get clean && \
   rm -rf \
     /config/* \

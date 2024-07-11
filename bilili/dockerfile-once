@@ -39,7 +39,7 @@ RUN \
     pip install . -i https://pypi.tuna.tsinghua.edu.cn/simple && \
     echo "alias ytt=\"gosu abc:abc yutto -d /config/ -n 8 --vcodec='hevc:copy' -q 127 -aq 30251 --output-format=mkv --no-danmaku --no-subtitle --vip-strict --login-strict \" " >> /root/.bashrc
 
-COPY entrypoint.sh /
+COPY entrypoint-once.sh /entrypoint.sh
 WORKDIR /config
 ENTRYPOINT ["/entrypoint.sh"]
 VOLUME /config
