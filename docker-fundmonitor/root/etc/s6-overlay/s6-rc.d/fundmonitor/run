@@ -1,16 +1,27 @@
 #!/usr/bin/with-contenv bash
 # ==============================================================================
-# FundMonitor 内网启动脚本
+# FundMonitor 启动脚本
 # 使用 with-contenv 加载环境变量，s6-overlay 管理进程
 # ==============================================================================
 
 cd /app || exit 1
+# 1. 确保 /config/funds.json 存在
+if [ ! -f /config/funds.json ]; then
+    echo "未检测到 /config/funds.json，创建空配置文件..."
+    echo "[]" > /config/funds.json
+fi
 
-# 默认 UID/GID
+# 2. 确保 /app/funds.json 存在并指向 /config/funds.json
+if [ ! -f /app/funds.json ]; then
+    echo "未检测到 /app/funds.json，创建软链接指向 /config/funds.json..."
+    ln -s /config/funds.json /app/funds.json
+fi
+chown -R abc:users /app
+chown -R abc:users /config
+# 3. 切换到指定 PUID/PGID 用户运行程序
 : "${PUID:=1000}"
 : "${PGID:=1000}"
-
-echo "以 UID:${PUID} GID:${PGID} 启动 FundMonitor (内网模式)..."
+echo "以 UID:${PUID} GID:${PGID} 启动 FundMonitor..."
 
 # 使用 Gunicorn 启动 Flask 应用，仅监听内网
 exec s6-setuidgid "${PUID}:${PGID}" \
