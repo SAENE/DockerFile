@@ -1,0 +1,44 @@
+FROM ghcr.io/linuxserver/baseimage-alpine:3.22
+
+WORKDIR /app
+
+ENV PUID=1000 \
+    PGID=1000 \
+    TZ=Asia/Shanghai \
+    LANG=C.UTF-8 \
+    PYTHONUNBUFFERED=1 
+
+RUN apk add --no-cache \
+      git \
+      python3 \
+      py3-pip \
+      bash \
+      coreutils \
+      sed \
+      tzdata \
+    && git clone https://github.com/MIX-LJ/FundMonitor.git /app \
+    && python3 -m venv /venv \
+    && . /venv/bin/activate \
+    && pip install --upgrade pip setuptools wheel gunicorn \
+    && pip install --no-cache-dir -r /app/requirements.txt \
+    && rm -rf /var/cache/apk/* /tmp/* /root/.cache/pip
+
+ENV PATH="/venv/bin:$PATH"
+
+VOLUME /config
+EXPOSE 5000
+    
+# 创建配置目录并设置权限模板
+RUN \
+    mkdir -p /config && \
+    # 设置目录权限模板
+    chmod -R 755 /config /app
+
+# 添加s6服务脚本
+COPY root/ /
+
+# 暴露配置目录（供挂载）
+VOLUME /config
+
+# 暴露端口
+EXPOSE 5000
