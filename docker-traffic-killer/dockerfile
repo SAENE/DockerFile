@@ -1,0 +1,24 @@
+# 使用指定的 Alpine 3.22.4 版本作为基础镜像
+FROM alpine:3.22.4
+
+# 安装脚本运行所需的依赖（bash, curl, bc）
+RUN apk add --no-cache bash curl bc
+
+# 设置容器内的工作目录
+WORKDIR /app
+
+# 将当前目录下的测试脚本复制到容器中
+COPY traffic_killer.sh /app/traffic_killer.sh
+
+# 赋予脚本可执行权限
+RUN chmod +x /app/traffic_killer.sh
+
+# 定义 Docker 环境变量默认值（运行时可通过 -e 覆盖）
+ENV URL="https://img.mcloud.139.com/material_prod/material_media/20221128/1669626861087.png"
+ENV THREADS=4
+ENV SPEED_LIMIT="2m"
+ENV LOG_MODE="INFO"
+ENV MAX_CONTINUOUS_FAILURES=20
+
+# 启动时将所有 Docker 环境变量注入到 Bash 环境中执行脚本
+ENTRYPOINT ["/bin/bash", "-c", "URL=${URL} THREADS=${THREADS} SPEED_LIMIT=${SPEED_LIMIT} LOG_MODE=${LOG_MODE} MAX_CONTINUOUS_FAILURES=${MAX_CONTINUOUS_FAILURES} /app/traffic_killer.sh"]
