@@ -1,9 +1,37 @@
 FROM linuxserver/code-server:latest
 RUN sed -i "s/http:\/\/archive.ubuntu.com/https:\/\/mirrors.ustc.edu.cn/g" /etc/apt/sources.list && apt update && sudo apt upgrade -y &&\
-    apt-get install -y iproute2 dnsutils wget zsh build-essential manpages-dev golang pip cargo rsync nodejs npm cron fonts-wqy-zenhei language-pack-zh-hans inetutils-ping knot-dnsutils gdb lua5.4 default-jre default-jdk && curl https://gitlab.com/volian/volian-archive/-/raw/main/install-nala.sh | bash && echo "**** clean up ****" && \
+    apt-get install -y iproute2 dnsutils wget zsh build-essential manpages-dev golang pip cargo rsync nodejs npm cron fonts-wqy-zenhei language-pack-zh-hans inetutils-ping knot-dnsutils gdb net-tools lsof curl git python3 unzip screen vim fontconfig dos2unix p7zip && echo "**** clean up ****" && \
   apt-get clean && \
   rm -rf \
     /config/* \
     /tmp/* \
     /var/lib/apt/lists/* \
     /var/tmp/* && chsh -s /bin/zsh && chsh -s /bin/zsh abc
+
+# 字体安装目录
+ENV FONT_DIR=/usr/share/fonts
+
+# 下载并安装 Nerd Fonts
+RUN for font in 0xProto.zip CascadiaCode.zip CascadiaMono.zip; do \
+      echo "Installing $font ..." && \
+      wget -q https://github.com/ryanoasis/nerd-fonts/releases/latest/download/$font -O /tmp/$font && \
+      unzip -o /tmp/$font -d $FONT_DIR && \
+      rm /tmp/$font; \
+    done \
+    && fc-cache -fv
+
+RUN for font in MapleMono-NF-CN-unhinted.zip MapleMonoNL-NF-CN-unhinted.zip MapleMonoNormal-NF-CN-unhinted.zip MapleMonoNormalNL-NF-CN-unhinted.zip; do \
+      echo "Installing $font ..." && \
+      wget -q https://github.com/subframe7536/maple-font/releases/latest/download/$font -O /tmp/$font && \
+      unzip -o /tmp/$font -d $FONT_DIR && \
+      rm /tmp/$font; \
+    done \
+    && fc-cache -fv
+
+RUN for font in SarasaTermSCNerd-Unhinted.ttf.7z; do \
+      echo "Installing $font ..." && \
+      wget -q https://github.com/laishulu/Sarasa-Term-SC-Nerd/releases/latest/download/$font -O /tmp/$font && \
+      7z x -aoa /tmp/$font -o$FONT_DIR && \
+      rm /tmp/$font; \
+    done \
+    && fc-cache -fv
