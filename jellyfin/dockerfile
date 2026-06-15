@@ -1,9 +1,0 @@
-# Version 2.0
-FROM linuxserver/jellyfin:latest
-RUN sed -i 's/archive.ubuntu.com/mirrors.cernet.edu.cn/g' /etc/apt/sources.list && apt update  && apt install -y fonts-noto-cjk-extra fonts-wqy-zenhei && echo "**** clean up ****" && \
-  apt-get clean && \
-  rm -rf \
-    /config/* \
-    /tmp/* \
-    /var/lib/apt/lists/* \
-    /var/tmp/* 
