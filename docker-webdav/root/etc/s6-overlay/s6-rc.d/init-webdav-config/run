@@ -48,7 +48,7 @@ fi
 cp "${default_webdav_sample}" "${apache_config_dir}/webdav.conf.sample"
 cp "${default_config_readme}" "${apache_config_dir}/README.md"
 
-chown_mode=${WEBDAV_CHOWN:-true}
+chown_mode=${WEBDAV_CHOWN:-false}
 case "${chown_mode,,}" in
     true|1|yes)
         echo "**** applying PUID/PGID ownership to /data ****"

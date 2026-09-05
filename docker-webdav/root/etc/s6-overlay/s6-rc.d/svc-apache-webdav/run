@@ -20,5 +20,5 @@ exec s6-notifyoncheck \
     -d \
     -n 300 \
     -w 1000 \
-    -c "curl -fsS http://127.0.0.1/.webdav-health >/dev/null" \
+    -c "curl -fs -o /dev/null http://127.0.0.1/.webdav-health" \
     /usr/sbin/apache2 "${apache_args[@]}"

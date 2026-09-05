@@ -21,8 +21,8 @@ DirectoryIndex disabled
 # service state and belongs in the persistent /config mount.
 DavLockDB "/config/locks/DavLock"
 
-# Public health endpoint used by Docker and s6. It contains only the word "ok"
-# and does not bypass authentication for anything under /data.
+# Public health endpoint used by the s6 startup readiness probe and Docker
+# HEALTHCHECK. It contains only "ok" and never exposes anything under /data.
 Alias "/.webdav-health" "/app/apache-webdav/health/ok"
 <Directory "/app/apache-webdav/health">
     AllowOverride None

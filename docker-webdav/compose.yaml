@@ -18,7 +18,7 @@ services:
       WEBDAV_AUTH: "${WEBDAV_AUTH:-basic}"
       WEBDAV_USERNAME: "${WEBDAV_USERNAME:-webdav}"
       WEBDAV_PASSWORD: "${WEBDAV_PASSWORD:-}"
-      WEBDAV_CHOWN: "${WEBDAV_CHOWN:-true}"
+      WEBDAV_CHOWN: "${WEBDAV_CHOWN:-false}"
     volumes:
       - ./config:/config
       - ./data:/data

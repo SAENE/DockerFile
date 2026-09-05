@@ -65,6 +65,33 @@ httpd.conf
 定义 `WEBDAV_NO_AUTH`，从而改用 `Require all granted`。后者允许匿名读写，只能
 用于可信网络或已完成认证的反向代理后端。
 
+## `/data` 所有权
+
+`WEBDAV_CHOWN` 默认为 `false`，启动脚本不会递归修改 `/data`。必须由宿主机保证
+`PUID:PGID` 对该目录有读写权限；权限不正确时 Apache 仍可能正常启动，但 PUT、
+MKCOL、MOVE 等写操作会失败。
+
+需要镜像修正现有数据时，可临时设置：
+
+```yaml
+environment:
+  WEBDAV_CHOWN: "true"
+```
+
+完成一次启动后可恢复为 `false`，避免大目录每次启动都进行递归 `chown`。
+`/config` 的所有权不受该变量控制，始终会修正为 `PUID:PGID`。
+
+## 健康检查
+
+`/.webdav-health` 只返回 `ok`，不读取 `/data`。s6 在启动时检查到成功一次后停止，
+Docker HEALTHCHECK 则默认每 30 秒检查一次。健康检查不是 WebDAV 功能必需项，
+但可用于启动就绪判断和容器健康状态。只关闭 Docker 检查可在 Compose 中设置：
+
+```yaml
+healthcheck:
+  disable: true
+```
+
 ## 常见修改
 
 关闭普通浏览器目录列表，把 `Options Indexes` 改成：

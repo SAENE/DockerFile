@@ -36,7 +36,7 @@ RUN chmod 0755 \
         /etc/s6-overlay/s6-rc.d/svc-apache-webdav/run
 
 ENV HOME=/config \
-    WEBDAV_CHOWN=true \
+    WEBDAV_CHOWN=false \
     UMASK=022
 
 VOLUME ["/config", "/data"]

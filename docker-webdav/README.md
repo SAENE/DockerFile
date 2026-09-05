@@ -35,6 +35,7 @@
 ```bash
 cd apache-webdav
 cp .env.example .env
+mkdir -p data
 ```
 
 修改 `.env`，至少填写 `WEBDAV_PASSWORD`，然后运行：
@@ -61,6 +62,7 @@ services:
       - WEBDAV_AUTH=basic
       - WEBDAV_USERNAME=webdav
       - WEBDAV_PASSWORD=替换为强密码
+      - WEBDAV_CHOWN=false
     volumes:
       - ./config:/config
       - ./data:/data
@@ -93,11 +95,21 @@ id -g
 | `WEBDAV_PASSWORD` | 空 | `basic` 模式首次启动且用户库不存在时必填；非空时每次启动都会创建或更新指定用户 |
 | `WEBDAV_USERNAME_FILE` | 未设置 | 从指定文件第一行读取用户名，用于 Docker secrets；不能同时设置 `WEBDAV_USERNAME` |
 | `WEBDAV_PASSWORD_FILE` | 未设置 | 从指定文件第一行读取密码，用于 Docker secrets；不能同时设置 `WEBDAV_PASSWORD` |
-| `WEBDAV_CHOWN` | `true` | `true` 时每次启动递归修正 `/data` 所有权；`false` 时跳过 `/data`，但 `/config` 仍会修正 |
+| `WEBDAV_CHOWN` | `false` | 默认不改动 `/data`；设为 `true` 时，每次启动递归修正其所有权。无论此值如何，`/config` 都会修正 |
 
 环境变量负责容器启动行为，不会重写已经存在的 `httpd.conf` 或 `webdav.conf`。
-数据很多且宿主机权限已经正确时，可以设置 `WEBDAV_CHOWN=false`，避免每次启动
-递归扫描 `/data`。此时必须自行保证 `PUID:PGID` 对 `/data` 有读写权限。
+`WEBDAV_CHOWN` 默认关闭，以免大数据目录在每次启动时被递归扫描。启动前必须自行
+保证 `PUID:PGID` 对 `/data` 有读写权限。例如使用当前宿主机用户管理文件时：
+
+```bash
+mkdir -p data
+sudo chown -R "$(id -u):$(id -g)" data
+```
+
+如果使用其他 `PUID`、`PGID`，请把命令中的 UID/GID 换成对应数值。也可以在首次
+启动时临时设置 `WEBDAV_CHOWN=true` 完成递归修正，之后再改回 `false`。使用空的
+Docker named volume 时尤其要注意其初始所有权，否则 Apache 可以启动，但上传、
+建目录等写操作会因权限不足而失败。
 
 ## 认证文件
 
@@ -233,8 +245,32 @@ docker logs -f apache-webdav
 | `DavLockDB` | `/config/locks/DavLock` | 保存 WebDAV LOCK 状态；属于服务状态，所以放在 `/config` 而非 `/data` |
 | `DocumentRoot` | `/data` | URL 根路径 `/` 对应的文件目录 |
 
-Docker 和 s6 使用公开的 `/.webdav-health` 检查 Apache 是否存活。该地址只映射到
-镜像内一个内容为 `ok` 的静态文件，不会绕过 `/data` 的认证。
+s6 启动就绪探针和 Docker HEALTHCHECK 使用公开的 `/.webdav-health`。该地址只
+映射到镜像内一个内容为 `ok` 的静态文件，不会绕过 `/data` 的认证。
+
+## 健康检查
+
+健康检查不是 WebDAV 协议本身的必需项，但镜像保留了两种用途不同的检查：
+
+- s6 在 Apache 启动时轮询 `/.webdav-health`，成功一次后即停止，用于确认服务
+  已经可以接受 HTTP 请求；
+- Docker 每 30 秒请求一次同一地址，用于在 `docker ps` 中显示 `healthy` 或
+  `unhealthy`，并供 Compose、监控或其他编排工具读取。
+
+s6 的内联检查由 execline 解析，不是 shell 命令，因此不能使用 `>/dev/null`。
+当前命令使用 curl 自己的 `-o /dev/null` 参数，不会再把重定向符误认为 URL，也
+不会把响应正文 `ok` 写进容器日志。
+
+如果只是不需要 Docker 的持续健康状态，可以在 Compose 服务中加入：
+
+```yaml
+healthcheck:
+  disable: true
+```
+
+这不会关闭 s6 启动阶段的一次性就绪确认，也不影响 WebDAV 功能。若连端点也要
+删除，则需要同时修改 s6 服务脚本、Dockerfile 的 `HEALTHCHECK` 以及
+`webdav.conf` 中的 `Alias`，不建议只删除其中一处。
 
 ### `/data` 目录规则
 
