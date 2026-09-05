@@ -1,0 +1,76 @@
+## Version 2026/09/05
+##
+## Reference WebDAV configuration. This file is refreshed from the image when
+## the container starts and is not loaded by Apache.
+##
+## Active file: /config/webdav.conf
+## Restore defaults with:
+##   cp /config/webdav.conf.sample /config/webdav.conf
+
+# Required modules are loaded centrally by /config/httpd.conf. This file only
+# contains the WebDAV virtual path, authentication and behavior directives.
+
+# Keep the header timeout bounded, but allow slow or very large request bodies.
+RequestReadTimeout header=20-40,MinRate=500 body=0
+
+# A GET request for a collection displays Apache's directory index instead of
+# looking for index.html. Remove "Indexes" below if browser listing is unwanted.
+DirectoryIndex disabled
+
+# mod_dav_fs tracks WebDAV locks here. Do not put this database in /data: it is
+# service state and belongs in the persistent /config mount.
+DavLockDB "/config/locks/DavLock"
+
+# Public health endpoint used by Docker and s6. It contains only the word "ok"
+# and does not bypass authentication for anything under /data.
+Alias "/.webdav-health" "/app/apache-webdav/health/ok"
+<Directory "/app/apache-webdav/health">
+    AllowOverride None
+    Options None
+    Require all granted
+</Directory>
+
+# /data is the single WebDAV content mount and appears as URL path /.
+DocumentRoot "/data"
+<Directory "/data">
+    Dav On
+    AllowOverride None
+    Options Indexes
+    IndexOptions FancyIndexing HTMLTable VersionSort NameWidth=* Charset=UTF-8
+
+    # Apache 2.4 otherwise imposes a finite upload limit on newer releases.
+    # Zero means unlimited; any reverse proxy in front must also allow the size.
+    LimitRequestBody 0
+
+    # WEBDAV_AUTH=none makes the service script start Apache with
+    # -DWEBDAV_NO_AUTH. Only use it behind a trusted authenticating proxy.
+    <IfDefine WEBDAV_NO_AUTH>
+        Require all granted
+        # Read-only alternative: replace the line above (do not keep both):
+        # Require method GET HEAD OPTIONS PROPFIND
+    </IfDefine>
+
+    # Default mode: bcrypt credentials in /config/auth/users.htpasswd.
+    <IfDefine !WEBDAV_NO_AUTH>
+        AuthType Basic
+        AuthName "WebDAV"
+        AuthBasicProvider file
+        AuthUserFile "/config/auth/users.htpasswd"
+        Require valid-user
+        # Read-only alternative: replace the line above with this block:
+        # <RequireAll>
+        #     Require valid-user
+        #     Require method GET HEAD OPTIONS PROPFIND
+        # </RequireAll>
+    </IfDefine>
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "no-referrer"
+
+    # Optional network restriction. Replace the normal "Require valid-user"
+    # above with this block if both authentication and an allowlist are needed.
+    # <RequireAll>
+    #     Require valid-user
+    #     Require ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    # </RequireAll>
+</Directory>

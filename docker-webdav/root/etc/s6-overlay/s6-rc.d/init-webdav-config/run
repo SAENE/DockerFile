@@ -1,0 +1,117 @@
+#!/usr/bin/with-contenv bash
+
+# shellcheck shell=bash
+set -euo pipefail
+
+readonly apache_config_dir=/config
+readonly auth_file=${apache_config_dir}/auth/users.htpasswd
+readonly default_httpd_config=/defaults/httpd.conf
+readonly default_webdav_config=/defaults/webdav.conf
+readonly default_webdav_sample=/defaults/webdav.conf.sample
+readonly default_config_readme=/defaults/config-README.md
+readonly active_httpd_config=${apache_config_dir}/httpd.conf
+readonly active_webdav_config=${apache_config_dir}/webdav.conf
+
+fail() {
+    echo "**** ERROR: $* ****" >&2
+    exit 1
+}
+
+read_first_line() {
+    local secret_file=$1
+    [[ -r ${secret_file} ]] || fail "cannot read secret file: ${secret_file}"
+    IFS= read -r REPLY < "${secret_file}" || [[ -n ${REPLY:-} ]]
+    printf '%s' "${REPLY%$'\r'}"
+}
+
+echo "**** preparing Apache WebDAV configuration ****"
+
+mkdir -p \
+    "${apache_config_dir}/auth" \
+    "${apache_config_dir}/conf.d" \
+    "${apache_config_dir}/locks" \
+    /data \
+    /run/apache2
+
+if [[ ! -f ${active_httpd_config} ]]; then
+    cp "${default_httpd_config}" "${active_httpd_config}"
+    echo "**** created ${active_httpd_config} ****"
+fi
+
+if [[ ! -f ${active_webdav_config} ]]; then
+    cp "${default_webdav_config}" "${active_webdav_config}"
+    echo "**** created ${active_webdav_config} ****"
+fi
+
+# Reference files mirror LinuxServer's *.sample convention. They are refreshed
+# on every start, while the active httpd.conf and webdav.conf are never replaced.
+cp "${default_webdav_sample}" "${apache_config_dir}/webdav.conf.sample"
+cp "${default_config_readme}" "${apache_config_dir}/README.md"
+
+chown_mode=${WEBDAV_CHOWN:-true}
+case "${chown_mode,,}" in
+    true|1|yes)
+        echo "**** applying PUID/PGID ownership to /data ****"
+        lsiown -R abc:abc /data
+        ;;
+    false|0|no)
+        echo "**** leaving /data ownership unchanged ****"
+        ;;
+    *)
+        fail "WEBDAV_CHOWN must be true or false"
+        ;;
+esac
+
+lsiown -R abc:abc "${apache_config_dir}"
+chmod 0750 "${apache_config_dir}/auth" "${apache_config_dir}/locks"
+
+apache_args=()
+auth_mode=${WEBDAV_AUTH:-basic}
+
+case "${auth_mode,,}" in
+    basic)
+        username=${WEBDAV_USERNAME:-webdav}
+        password=${WEBDAV_PASSWORD:-}
+
+        if [[ -n ${WEBDAV_USERNAME_FILE:-} ]]; then
+            [[ -z ${WEBDAV_USERNAME:-} ]] || fail \
+                "set only one of WEBDAV_USERNAME and WEBDAV_USERNAME_FILE"
+            username=$(read_first_line "${WEBDAV_USERNAME_FILE}")
+        fi
+
+        if [[ -n ${WEBDAV_PASSWORD_FILE:-} ]]; then
+            [[ -z ${WEBDAV_PASSWORD:-} ]] || fail \
+                "set only one of WEBDAV_PASSWORD and WEBDAV_PASSWORD_FILE"
+            password=$(read_first_line "${WEBDAV_PASSWORD_FILE}")
+        fi
+
+        [[ -n ${username} ]] || fail "WEBDAV_USERNAME must not be empty"
+        [[ ${username} != *:* ]] || fail "WEBDAV_USERNAME must not contain ':'"
+
+        if [[ -n ${password} ]]; then
+            if [[ -e ${auth_file} ]]; then
+                printf '%s\n' "${password}" | htpasswd -B -i "${auth_file}" "${username}"
+            else
+                printf '%s\n' "${password}" | htpasswd -B -i -c "${auth_file}" "${username}"
+            fi
+            chmod 0640 "${auth_file}"
+            lsiown abc:abc "${auth_file}"
+            echo "**** Basic Auth configured for user '${username}' ****"
+        elif [[ -s ${auth_file} ]]; then
+            echo "**** using existing ${auth_file} ****"
+        else
+            fail "WEBDAV_PASSWORD or WEBDAV_PASSWORD_FILE is required on first start"
+        fi
+        ;;
+    none)
+        echo "**** authentication disabled; keep port 80 on a trusted network ****"
+        apache_args+=( -DWEBDAV_NO_AUTH )
+        ;;
+    *)
+        fail "WEBDAV_AUTH must be 'basic' or 'none'"
+        ;;
+esac
+
+chmod go-w "${apache_config_dir}"
+
+/usr/sbin/apache2 -t -f "${active_httpd_config}" "${apache_args[@]}"

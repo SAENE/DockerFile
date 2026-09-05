@@ -1,0 +1,9 @@
+.env
+config/*
+!config/httpd.conf
+!config/webdav.conf
+!config/webdav.conf.sample
+!config/README.md
+data
+README.md
+compose.yaml
